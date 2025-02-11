@@ -1,11 +1,12 @@
 
 # This is the main starting point of the program
 
+from tkinter.messagebox import NO
 from turtle import done
 from CoffeeBeanContainer import Container
 from CoffeeBean import CoffeeBean
 
-class Start_Prog:
+class CoffeeBeansProblem:
 
     def __init__(self, listMaxCapacities, listInitCapacities):
         Container.resetContainers(self)
@@ -26,10 +27,10 @@ class Start_Prog:
     # If not, 
     #   Then only reduce one bean from the container with the fewest amount
 
-    def ShiftBeans(self, quantity, fromContainer ,ToContainer = None):
+    def ShiftBeans(self, quantity, fromContainer, ToContainer = None, makeCoffee = True):
         if(ToContainer == None):
-            if(quantity > 0):
-                self.MakeCoffee(fromContainer)
+            if ( quantity > 0 and makeCoffee):
+                self.MakeCoffeeFromContainer(fromContainer)
             return
         
         beanShift = fromContainer.extractBeans(quantity)
@@ -37,20 +38,32 @@ class Start_Prog:
         if(beanShift == None):
             return
         
-        self.CoffeeMachine.addBeans(beanShift[:1])
-        ToContainer.addBeans(beanShift[1:])
+        if(makeCoffee):
+            self.CoffeeMachine.addBeans(beanShift[:1])
+            ToContainer.addBeans(beanShift[1:])
+        
+        else:
+            ToContainer.addBeans(beanShift)
 #        print(self.CoffeeMachine)
 #        print (fromContainer)
 #        print (ToContainer)
 
-    def MakeCoffee(self, containerToUse):
+    def MakeCoffeeFromBean(self, coffeeBean):
+        if isinstance(coffeeBean[0], CoffeeBean):
+            self.CoffeeMachine.addBeans(coffeeBean)
+        else:
+            print(type(coffeeBean))
+            print(type(CoffeeBean))
+            print(f'Cant make good coffee from garbige')    
+        
+    def MakeCoffeeFromContainer(self, containerToUse):
         self.CoffeeMachine.addBeans(containerToUse.extractBeans(1))
           
           
     def UseAllCoffeeInContainer(self, ContainerToUse):
         beanQuntity = ContainerToUse.returnBeanQuantity()
         for x in range(beanQuntity):
-            self.MakeCoffee(ContainerToUse)
+            self.MakeCoffeeFromContainer(ContainerToUse)
             
     
     def UseBalansedLessFilledContainer(self):
@@ -61,13 +74,12 @@ class Start_Prog:
         
         
         while len(List_EmptyContainers) < self.NumberOfContainers:
-            print(self.ContainersArray)
             nextContainerToUse = self.returnContainerHoldsMinimumAmount(self.ContainersArray)
 
             # need to shift beans
             nextContainerBeanQuantity = nextContainerToUse.returnBeanQuantity()
             
-            #if more then 2 beans left, and have empty container: shifting beans
+            # if more then 2 beans left, and have empty container: shifting beans
             if nextContainerBeanQuantity > 2 and len(List_EmptyContainers) > 0:       
             
                 # if avilable empth container, find the biggest
@@ -78,14 +90,77 @@ class Start_Prog:
                 if (beansToShift - 1) > emptyCapacity:
                     beansToShift = (emptyCapacity + 1)
                     
-                self.ShiftBeans(beansToShift, nextContainerToUse, biggestEmptyContainer)        
+                self.ShiftBeans(beansToShift, nextContainerToUse, biggestEmptyContainer, True)        
                            
             else:
                 self.UseAllCoffeeInContainer(nextContainerToUse)
 
-            #update empty containers list
+            # update empty containers list
             List_EmptyContainers  = self.returnAllEmptyContainers()
             
+            
+            
+    def FillLogBasedBalansedContainer(self):
+        
+        List_EmptyContainers  = self.returnAllEmptyContainers()
+        
+        while len(List_EmptyContainers) < self.NumberOfContainers:
+            
+            # use the container with the minimum anount of beans
+            nextContainerToUse = self.returnContainerHoldsMinimumAmount(self.ContainersArray)
+            
+            SortedEmptyContainer = self.returnSortedContainersByContainerMaxCapacity(List_EmptyContainers, True)
+            
+            # if no empty containers or focus container holds less then 3 beans:
+            #   us all beans in container
+            if ((SortedEmptyContainer == None) or (nextContainerToUse.returnBeanQuantity() < 3)):
+                self.UseAllCoffeeInContainer(nextContainerToUse)
+                
+            
+            
+            else:
+                # Extract Beans to shift:
+                #   if even number, extract half --> 8/2 = 4 
+                #   if odd number, extract integer half + 1 --> 9/2 = 5
+                TotalAvilableBeansToShift = int((nextContainerToUse.returnBeanQuantity()+1)/2)
+                CurrentAvilableBeans = TotalAvilableBeansToShift
+                BeanSpreadShift = []
+            
+                for x in SortedEmptyContainer:
+                    
+                    if CurrentAvilableBeans == 0:
+                        continue
+                    
+                    # quantity beans to shift
+                    beansToShift = int((CurrentAvilableBeans+1) / 2)
+                                                
+                    # current empty capacity
+                    emptyCapacity = x.returnMaxCapacity()
+                    
+                    # abjust the shift amount to according to avilability
+                    if beansToShift > emptyCapacity:
+                        beansToShift = emptyCapacity
+                    
+                    BeanSpreadShift.append(beansToShift)
+                    CurrentAvilableBeans -= beansToShift
+                
+                
+                # calculate the amount of beans been used 
+                # extract them and distribute based on the bean spread shift
+                # rebuild the empty list
+                
+                ArrayBeansToShift = nextContainerToUse.extractBeans(TotalAvilableBeansToShift-CurrentAvilableBeans+1)
+                self.MakeCoffeeFromBean(ArrayBeansToShift[:1])
+                ArrayBeansToShift = ArrayBeansToShift[1:]
+
+                for index in range (len(BeanSpreadShift)):
+                    amount = BeanSpreadShift[index]
+                    SortedEmptyContainer[index].addBeans(ArrayBeansToShift[:amount])
+                    ArrayBeansToShift = ArrayBeansToShift[amount:]
+                                       
+            List_EmptyContainers  = self.returnAllEmptyContainers()      
+    
+    
     def returnAllEmptyContainers(self):
         new_list = []
         for x in self.ContainersArray:
@@ -119,29 +194,36 @@ class Start_Prog:
         return biggestContainer
     
     
-    def returnSortedContainersByBeanQuantity(self):
+    def returnSortedContainersByBeanQuantity(self, List_Containers = None, Reverse_List = False):
         new_list = []
-        new_list = sorted(self.ContainersArray , key=lambda x: x.returnBeanQuantity(), reverse=False)
-        print(f"Sorted list: {new_list}")
+        if List_Containers != None:
+            new_list = sorted(List_Containers , key=lambda x: x.returnBeanQuantity(), reverse=Reverse_List)
+            #print(f"Sorted list: {new_list}")
         return new_list
     
-    def returnSortedContainersByContainerMaxQuantity(self):
+    def returnSortedContainersByContainerMaxCapacity(self, List_Containers = None, Reverse_List = False):
         new_list = []
-        new_list = sorted(self.ContainersArray , key=lambda x: x.returnMaxQuantity(), reverse=False)
-        print(f"Sorted list (by container size): {new_list}")
+        if List_Containers != None:
+            new_list = sorted(List_Containers , key=lambda x: x.returnMaxCapacity(), reverse=Reverse_List)
+            #print(f"Sorted list (by container size): {new_list}")
         return new_list
+            
     
     def test(self, testCase):
         match testCase:
             # this will iterate on each container and use it antil it will be empty
             case 1:
                 print(f"\n === Run Test Case {testCase} ===")
-                self.returnSortedContainersByBeanQuantity()
-                self.returnSortedContainersByContainerMaxQuantity()
+                self.returnSortedContainersByBeanQuantity(self.ContainersArray)
+                self.returnSortedContainersByContainerMaxCapacity()
+                testList = self.returnSortedContainersByBeanQuantity(self.ContainersArray)
+                self.returnSortedContainersByContainerMaxCapacity(testList)
+                self.returnSortedContainersByContainerMaxCapacity(testList, True)
+                self.returnSortedContainersByBeanQuantity(self.ContainersArray, True)
                 
             case 2:
                 print(f"\n === Run Test Case {testCase} ===")
-                self.MakeCoffee(self.ContainersArray[2])
+                self.MakeCoffeeFromContainer(self.ContainersArray[2])
             
             case 3:
                 print(f"\n === Run Test Case {testCase} ===")
@@ -151,7 +233,24 @@ class Start_Prog:
                 else empty the liss full container
                 '''
                 self.UseBalansedLessFilledContainer()
+            
+            case 4:
+                print(f"\n === Run Test Case {testCase} ===")
+                '''
+                if have empty container and the liss full have more then 2 
+                take from the liss and move half to the empty container (with the largest capacity)
+                    repeat the calculation for all the empty containers
+                example:
+                    5 containers: 
+                        20/20   0/10    0/10    0/10    0/10
+                    next step: 
+                        9/20    5/10    3/10    2/10    0/10 --> 1 make coffee
+
+                else empty the liss full container
+                '''
+                self.FillLogBasedBalansedContainer()
                 
+                  
             case _:
                 print(f"\n === Run Test CasDefaulte Default ===")
                 for x in self.ContainersArray:
@@ -164,15 +263,19 @@ class Start_Prog:
 def main():
     print("The Program Started ...")
 
-    listMaxCapacities =  [10, 20, 30, 40, 60, 50, 100, 50]
-    listInitCapacities = [10,  0,  2,  0, 30, 40,   0, 35]
-    start1 = Start_Prog(listMaxCapacities, listInitCapacities)
-    print (f"Number of empty containers = {len(start1.returnAllEmptyContainers())}")
+    listMaxCapacities =  [70,  6, 80,  3, 60, 50,  4, 50,  2]
+    listInitCapacities = [45,  0, 80,  0, 50, 50,  0, 45,  0]
+    start1 = CoffeeBeansProblem(listMaxCapacities, listInitCapacities)
     start1.test(3)
+    
+    start2 = CoffeeBeansProblem(listMaxCapacities, listInitCapacities)
+    start2.test(4)
+    
+    '''
     print (f"Number of empty containers = {len(start1.returnAllEmptyContainers())}")
     start1.test(0)
     print (f"Number of empty containers = {len(start1.returnAllEmptyContainers())}")
-    exit()
+
     start1.printArray(True)
     start1.test(2)
 
@@ -180,14 +283,12 @@ def main():
 
     start1.test(0)
 
-    
-    containersData.reverse()
-    start2 = Start_Prog(containersSize, containersData)
+    start2 = CoffeeBeansProblem(listMaxCapacities, listInitCapacities)
     start2.test(0)
     #print(start2.CoffeeMachine)
-
-
     #start2.printArray(True)
+    '''
+    
     print("Program endded ")
 
 if __name__ =="__main__":

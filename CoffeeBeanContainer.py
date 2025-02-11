@@ -14,9 +14,9 @@ class Container:
         
         Container.ObjectIndex+=1
         
-        self.init(InitQuantity)
+        self.__PrivateInit__(InitQuantity)
         
-    def init(self, InitQuantity = 0):
+    def __PrivateInit__(self, InitQuantity = 0):
         self.InitQuantity = InitQuantity
         
         if(self.MaxCapacity < InitQuantity):
@@ -25,9 +25,9 @@ class Container:
             self.InitQuantity = 0
         
         self.BeanPool = []
-        self.initBeanPool()
+        self.__initBeanPool__()
 
-    def initBeanPool(self):
+    def __initBeanPool__(self):
         for i in range(self.InitQuantity):
             self.BeanPool.append(CoffeeBean())
 
@@ -35,7 +35,7 @@ class Container:
         if self.ObjectIndex == 0:
             return f"CoffeeMachine: Holds: {len(self.BeanPool)} Total quality = {self.returnTotalBeanQuality()}"
         else:
-            return f"\nContainer: {self.ObjectIndex} Holds: {len(self.BeanPool)}/{self.returnInitQuantity()} Total quality = {self.returnTotalBeanQuality()}"
+            return f"\nContainer: {self.ObjectIndex} Holds: {len(self.BeanPool)}/{self.returnInitQuantity()}/{self.returnMaxCapacity()} Total quality = {self.returnTotalBeanQuality()}"
     
     def __repr__(self):
         return str(self)
@@ -53,12 +53,12 @@ class Container:
     def returnInitQuantity(self):
         return self.InitQuantity
 
-    def openContainer(self):
+    def __openContainer__(self):
         self.Openning+=1
         if self.ObjectIndex > 0:
-            self.incBeanPoolQuality()
+            self.__incBeanPoolQuality__()
 
-    def incBeanPoolQuality(self):
+    def __incBeanPoolQuality__(self):
         for x in self.BeanPool:
             x.incQuality()
 
@@ -74,7 +74,7 @@ class Container:
             return None
         else:
 
-            self.openContainer()
+            self.__openContainer__()
             extractedBeans = self.BeanPool[-amount:]
             self.BeanPool = self.BeanPool[:-amount]
             return extractedBeans
@@ -84,7 +84,7 @@ class Container:
         
         if(self.ObjectIndex == 0):
             if(len(Beans) == 1):
-                self.openContainer()
+                self.__openContainer__()
                 self.BeanPool.extend(Beans)
             return
             
@@ -95,7 +95,7 @@ class Container:
             print(f"container {self.ObjectIndex} max quantity {self.MaxCapacity} currently contain {self.returnBeanQuantity()}")
             print(f"trying to add {len(Beans)} is over the limit")
         else:
-            self.openContainer()
+            self.__openContainer__()
             self.BeanPool.extend(Beans)
 
     def returnObjectIndex(self):
