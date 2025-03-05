@@ -11,6 +11,20 @@ app = Flask(__name__)
 
 print ("http://127.0.0.1:5000//hello//Regev")
 
+
+def decorator_function(func):
+    def inner_function():
+        print("Before the function is called.")
+        func()
+        print("After the function is called.")
+    return inner_function
+
+@decorator_function
+def args_funtion():
+    print("In the middle we are!")
+
+args_funtion()  
+    
 @app.route("/api/data")
 def get_data():
     return app.send_static_file("data.json")
